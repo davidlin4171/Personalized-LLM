@@ -21,10 +21,11 @@ python app.py
 cd client
 npm install
 npm start
-
+```
 ---
 ## Windows Setup
 
+```bash
 # 1. Create and activate virtual environment
 python -m venv venv
 venv\Scripts\activate
@@ -41,3 +42,4 @@ python app.py
 cd ../client
 npm install
 npm start
+```
