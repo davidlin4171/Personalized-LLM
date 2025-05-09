@@ -12,12 +12,15 @@ source venv/bin/activate
 # 2. Install backend dependencies
 pip install -r requirements.txt
 
-# 3. Navigate to backend folder and start services
+# 3. Navigate to llm folder and start llm 
 cd llm_api
 python llm_server.py
+
+# 4. Open a new terminal for the backend
+cd client/src/backend
 python app.py
 
-# 4. Open a new terminal for the frontend
+# 5. Open a new terminal for the frontend
 cd client
 npm install
 npm start
@@ -33,12 +36,15 @@ venv\Scripts\activate
 # 2. Install backend dependencies
 pip install -r requirements.txt
 
-# 3. Navigate to backend folder and start services
+# 3. Navigate to llm folder and start llm 
 cd llm_api
 python llm_server.py
+
+# 4. Open a new terminal for the backend
+cd client/src/backend
 python app.py
 
-# 4. Open a new terminal for the frontend
+# 5. Open a new terminal for the frontend
 cd client
 npm install
 npm start
