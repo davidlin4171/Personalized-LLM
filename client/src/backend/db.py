@@ -86,7 +86,7 @@ try:
         {
             "user_id": 1,
             "info_chunk": "user is interested in planes",
-            "info_chunk_embedding": embedder.encode("user is interested in planes", convert_to_tensor=True).tolist()
+            "vector": embedder.encode("user is interested in planes", convert_to_tensor=True).tolist()
         }
     ]
     # setup tables
