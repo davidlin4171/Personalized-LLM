@@ -8,6 +8,8 @@ import torch
 
 app = Flask(__name__)
 
+
+llm_url = 'http://127.0.0.1:5000/ask'
 embedder = SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
 
 # setup vector database - lancedb
@@ -129,7 +131,6 @@ def query():
 
     prompt, history_prompt = generate_prompt(query, user_id, session_id)
     
-    llm_url = 'http://127.0.0.1:5000/ask'
     payload = {
         "user_id": user_id,
         "prompt": prompt
@@ -153,8 +154,23 @@ def query():
 
     return response
 
-@app.route('/')
-def default():
+@app.route('/extract-info', methods=['POST'])
+def extract_info(user_id, query):
+    prompt = f'''
+ You are an assistant that extracts structured information from natural language queries.
+
+Extract the following:
+- interest: What general area or domain does this question relate to? (e.g., history, science, politics)
+- topic: What is the main entity or subject being asked about?
+- question_type: What type of question is this? (e.g., factual, opinion, comparison, definition)
+- user_goal: What is the user likely trying to achieve with this query? (e.g., learning, writing a report, casual curiosity)
+
+Query: {query}
+'''
+    payload = {
+        "user_id": user_id,
+        "prompt": prompt
+    }
     return "Hello"
 
 if __name__ == '__main__':
