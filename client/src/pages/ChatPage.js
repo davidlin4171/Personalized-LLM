@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import QueryInput from "../components/QueryInput";
 import ChatWindow from "../components/ChatWindow";
 import Sidebar from "../components/Sidebar";
+import { extractInfoFromQuery, insertInfoToDB} from "../utils/extractInfo";
 
 function ChatPage() {
   const [input, setInput] = useState("");
@@ -11,7 +12,7 @@ function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true);
 
   // tempopary mock function, replace this later with real LLM API call
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (input.trim() === "") return;
 
     const userMsg = { role: "user", content: input };
@@ -23,6 +24,17 @@ function ChatPage() {
     const newMessages = [...messages, userMsg, aiMsg];
     setMessages(newMessages);
     setInput("");
+
+    // use Gemini to extract info
+    const extracted = await extractInfoFromQuery(input);
+    //if (!isDatabaseFull && extracted)
+    if (extracted) {
+        console.log("Extracted info", extracted);
+
+        // TODO: insert to DB 
+        // await insertInfoToDB(extracted);
+    }
+
 
     if (newMessages.length === 2) {
       const newConversation = {
