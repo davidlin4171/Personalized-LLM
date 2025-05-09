@@ -156,8 +156,7 @@ def query():
 
 @app.route('/extract-info', methods=['POST'])
 def extract_info(user_id, query):
-    prompt = f'''
- You are an assistant that extracts structured information from natural language queries.
+    prompt = f'''You are an assistant that extracts structured information from natural language queries.
 
 Extract the following:
 - interest: What general area or domain does this question relate to? (e.g., history, science, politics)
