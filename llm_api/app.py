@@ -23,16 +23,25 @@ MODEL_NAME = "models/gemini-2.0-flash"
 def ask():
     data = request.get_json()
     user_id = data.get("user_id")
-    query = data.get("query")
-    context = data.get("context", "")
+    
+    # context = data.get("context", "")
 
-    prompt = f"{context}\n\nUser: {query}\nAssistant:"
+    full_prompt = data.get("prompt")
+
+    payload = {
+        "inputs": full_prompt,
+        "parameters": {
+            "max_new_tokens": 200,
+            "temperature": 0.7,
+            "return_full_text": False
+        }
+    }
 
     try:
         # 使用 client.models.generate_content 生成响应
         response = client.models.generate_content(
             model=MODEL_NAME,
-            contents=[prompt]
+            contents=[full_prompt]
         )
 
         if response.candidates:
