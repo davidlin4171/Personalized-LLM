@@ -22,10 +22,10 @@ app = Flask(__name__)
 def ask():
     data = request.get_json()
     user_id = data.get("user_id")
-    query = data.get("query")
-    context = data.get("context", "")
+    
+    # context = data.get("context", "")
 
-    full_prompt = f"{context}\n\nUser: {query}\nAssistant:"
+    full_prompt = data.get("prompt")
 
     payload = {
         "inputs": full_prompt,
