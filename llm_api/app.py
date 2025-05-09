@@ -173,4 +173,4 @@ Query: {query}
     return "Hello"
 
 if __name__ == '__main__':
-    app.run(port=3000, debug=True) # change port from llm_api
+    app.run(port=3001, debug=True) # change port from llm_api
