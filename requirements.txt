@@ -4,7 +4,12 @@ sentence-transformers
 transformers
 nltk
 flask
+flask-cors
 requests
 dotenv
 lancedb
 torch
+google
+google-generativeai==0.10
+genai
+google-genai
