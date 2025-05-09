@@ -39,7 +39,7 @@ python llm_server.py
 python app.py
 
 # 4. Open a new terminal for the frontend
-cd ../client
+cd client
 npm install
 npm start
 ```
