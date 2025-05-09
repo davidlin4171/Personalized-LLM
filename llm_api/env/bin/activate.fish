@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/hruiying/cs510/llm_api/env"
+set -gx VIRTUAL_ENV "/home/hruiying/cs510/Personalized-LLM/llm_api/env"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

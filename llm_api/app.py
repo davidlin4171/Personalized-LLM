@@ -2,21 +2,22 @@ from flask import Flask, request, jsonify
 import requests
 import os
 from dotenv import load_dotenv
+from google import genai
 
 load_dotenv()
 
-HF_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
+app = Flask(__name__)
 
-# ✅ 选择你想用的模型（建议用支持对话的 Instruct 模型）
-HF_MODEL = "HuggingFaceH4/zephyr-7b-beta"
-HF_API_URL = f"https://api-inference.huggingface.co/models/{HF_MODEL}"
+GEMINI_API_KEY = 'AIzaSyChbX9RetszZAMX5crB3QQNcux-n9t6M5o'
 
 headers = {
-    "Authorization": f"Bearer {HF_API_KEY}",
+    "Authorization": f"Bearer {GEMINI_API_KEY}",
     "Content-Type": "application/json"
 }
+client = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_NAME = "models/gemini-2.0-flash"
+#model = genai.GenerativeModel("gemini-pro")
 
-app = Flask(__name__)
 
 @app.route('/ask', methods=['POST'])
 def ask():
@@ -25,32 +26,25 @@ def ask():
     query = data.get("query")
     context = data.get("context", "")
 
-    full_prompt = f"{context}\n\nUser: {query}\nAssistant:"
-
-    payload = {
-        "inputs": full_prompt,
-        "parameters": {
-            "max_new_tokens": 200,
-            "temperature": 0.7,
-            "return_full_text": False
-        }
-    }
+    prompt = f"{context}\n\nUser: {query}\nAssistant:"
 
     try:
-        response = requests.post(HF_API_URL, headers=headers, json=payload)
-        response.raise_for_status()
-        result = response.json()
+        # 使用 client.models.generate_content 生成响应
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=[prompt]
+        )
 
-        if isinstance(result, list) and "generated_text" in result[0]:
-            answer = result[0]["generated_text"]
+        if response.candidates:
+            reply = response.candidates[0].content.parts[0].text
         else:
-            answer = "Model did not return a valid response."
+            reply = "No response generated."
 
-        return jsonify({"response": answer})
+        return jsonify({"response": reply})
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Unexpected error: {str(e)}"}), 500
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
