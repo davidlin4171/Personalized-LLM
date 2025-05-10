@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function ProfilePage() {
   const [userInfo, setUserInfo] = useState({
@@ -16,6 +17,7 @@ function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [answers, setAnswers] = useState(["", "", "", "", ""]);
+  const navigate = useNavigate();
 
   const handleChange = (key, value) => {
     setUserInfo((prev) => ({ ...prev, [key]: value }));
@@ -36,6 +38,9 @@ function ProfilePage() {
     setEditMode(false);
     setDraftInfo(null);
     alert("Information saved");
+
+    localStorage.setItem("user", JSON.stringify({ email: draftInfo.email }));
+    navigate("/chat");
   };
 
   const handleCancel = () => {
@@ -61,12 +66,12 @@ function ProfilePage() {
               }
               className="w-full border px-3 py-2 rounded"
             />
-            <label className="block text-sm font-medium">Name</label>
+            <label className="block text-sm font-medium">Password</label>
             <input
               disabled={!editMode}
-              value={editMode ? draftInfo?.name : userInfo.name}
+              value={editMode ? draftInfo?.passward : userInfo.passward}
               onChange={(e) =>
-                editMode && setDraftInfo({ ...draftInfo, name: e.target.value })
+                editMode && setDraftInfo({ ...draftInfo, passward: e.target.value })
               }
               className="w-full border px-3 py-2 rounded"
             />

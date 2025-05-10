@@ -1,8 +1,9 @@
 import React from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation} from "react-router-dom";
 
 function NavBar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = localStorage.getItem("user");
 
   const linkClass =
@@ -15,9 +16,10 @@ function NavBar() {
     navigate("/login");
   };
 
-  return (
-    <nav className="bg-white shadow p-4 flex justify-end gap-4">
-      {!user && (
+  // only show login and sign up on login page
+  if (location.pathname === "/login") {
+    return (
+      <nav className="bg-white shadow p-4 flex justify-end gap-4">
         <NavLink
           to="/login"
           className={({ isActive }) =>
@@ -26,7 +28,18 @@ function NavBar() {
         >
           Login
         </NavLink>
-      )}
+        <button
+          onClick={() => navigate("/profile")}
+          className={linkClass}
+        >
+          Sign Up
+        </button>
+      </nav>
+    );
+  }
+
+  return (
+    <nav className="bg-white shadow p-4 flex justify-end gap-4">
       <NavLink
         to="/chat"
         className={({ isActive }) =>
