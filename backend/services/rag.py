@@ -22,7 +22,7 @@ def collect_personal_info(query, user_id, summarized_query, tags):
         # vector search (no tag filtering)
         personal_info_df = (
             setup.personal_table.search(query_embedding)
-            .where(f"user_id = {user_id}")
+            .where(f"user_id = '{user_id}'")
             .limit(top_n)
             .to_pandas()
         )
@@ -71,7 +71,7 @@ def collect_personal_info(query, user_id, summarized_query, tags):
             print(top_k_df[['info_chunk', 'rank_score', 'tag_score' if 'tag_score' in top_k_df else 'rank_score', 'final_score']])
 
             for i, row in top_k_df.iterrows():
-                setup.personal_table.update(where=f"info_chunk = '{row['info_chunk']}' AND user_id = {user_id}", values={
+                setup.personal_table.update(where=f"info_chunk = '{row['info_chunk']}' AND user_id = '{user_id}'", values={
                     "usage_count": row['usage_count'] + 1,
                     "time_stamp": datetime.now().isoformat()
                 })
@@ -97,7 +97,7 @@ def generate_prompt(query, user_id, session_id, summarized_query, tags):
     # extract prompt history
     history_prompt = (
         setup.sessions_table.search()
-        .where(f"user_id = {user_id} AND session_id = {session_id}")
+        .where(f"user_id = '{user_id}' AND session_id = {session_id}")
         .to_pandas()
     )
     # new session
@@ -144,9 +144,9 @@ def generate_response(data):
         }
     ]
     # update session_table with new history prompt
-    # setup.sessions_table.delete(f"user_id = {user_id} AND session_id = {session_id}")
+    # setup.sessions_table.delete(f"user_id = '{user_id}' AND session_id = {session_id}")
     # setup.sessions_table.add(session) 
-    setup.sessions_table.update(where=f"user_id = {user_id} AND session_id = {session_id}", 
+    setup.sessions_table.update(where=f"user_id = '{user_id}' AND session_id = {session_id}", 
                                 values={
                                     "history_prompt": f"{history_prompt} {response}"
                                 })
@@ -160,7 +160,7 @@ def delete_session_data(data):
 
 def clear_personal_table(data):
     user_id = data.get('user_id')
-    MAX_ENTRIES = 30
+    MAX_ENTRIES = 100
     REMOVE_COUNT = MAX_ENTRIES * 0.2
 
     current_size = len(setup.personal_table)
@@ -189,7 +189,7 @@ def clear_personal_table(data):
             info = row['info_chunk']
             user_id = row['user_id']
             
-            setup.personal_table.delete(where=f"user_id = {user_id} AND info_chunk = '{info}'")
+            setup.personal_table.delete(where=f"user_id = '{user_id}' AND info_chunk = '{info}'")
     except Exception as e:
         # Randomly sample rows to drop
         print("removing randomly", min(0, int(REMOVE_COUNT)))
@@ -199,7 +199,7 @@ def clear_personal_table(data):
             info = row['info_chunk']
             user_id = row['user_id']
             
-            setup.personal_table.delete(where=f"user_id = {user_id} AND info_chunk = '{info}'")
+            setup.personal_table.delete(where=f"user_id = '{user_id}' AND info_chunk = '{info}'")
 
     return f"Removed {REMOVE_COUNT} entries from personal_table to maintain size."
 
@@ -249,7 +249,7 @@ def extract_info(data):
     # extract the history prompt
     history_prompt = (
         setup.sessions_table.search()
-        .where(f"user_id = {user_id} AND session_id = {session_id}")
+        .where(f"user_id = '{user_id}' AND session_id = {session_id}")
         .to_pandas()
     )
 

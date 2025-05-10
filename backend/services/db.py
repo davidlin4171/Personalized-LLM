@@ -13,11 +13,11 @@ personal_table = None
 Structure - 1 table for storing session/conversation history, 1 table for personal info
 Table: Sessions
     Column: session_id -> int
-    Column: user_id -> int
+    Column: user_id -> string
     Column: prompt and answer -> text
 
 Table: Personal Info
-    Column: user_id -> int
+    Column: user_id -> string
     Column: info_chunk -> text
     Column: vector -> vector embedding
 '''
@@ -31,19 +31,19 @@ def initialize_db():
     global sessions_table, personal_table
     example_sessions = [
         {
-            "user_id": 1, 
+            "user_id": '1', 
             "session_id": 1,
             "history_prompt": "Q: Who invented the plane? A: The Wright Brothers \n Q: When was it invented? A: 1903"
         },
         {
-            "user_id": 1, 
+            "user_id": '1', 
             "session_id": 2,
             "history_prompt": "Q: When was 9/11 A: September 11, 2001 \n Q: Who did it? A: Bush"
         }   
     ]
     example_personal_info = [
         {
-            "user_id": 1,
+            "user_id": '1',
             "info_chunk": "user is interested in planes",
             "vector": embed("user is interested in planes"),
             "tags": ['planes'],
