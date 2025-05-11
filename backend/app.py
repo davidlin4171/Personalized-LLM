@@ -16,23 +16,23 @@ llm_url = 'http://127.0.0.1:5000/ask'
 initialize_system()
 
 @app.route('/query-llm', methods=['POST'])
-def query():
+def query(): # query llm and output the response for user's query
     data = request.get_json()
     response = rag.generate_response(data)
     return jsonify({"response": response})
 
 @app.route('/switch-session', methods=['POST'])
-def switch_sessions():
+def switch_sessions(): # when switching over to a new session deleted information is cleared from disk
     data = request.get_json()
     rag.delete_session_data(data)
 
 @app.route('/manage-personal-info', methods=['POST'])
-def manage_personal_info():
+def manage_personal_info(): # periodically called to delete information from personal_info table to maintain size
     data = request.get_json()
     return jsonify(rag.clear_personal_table(data))
 
 @app.route('/extract-info', methods=['POST'])
-def extract_info():
+def extract_info(): # extract query specific information as well as personal information from user's query
     data = request.get_json()
     extracted_info = rag.extract_info(data)
     return jsonify({"extracted_info": extracted_info})

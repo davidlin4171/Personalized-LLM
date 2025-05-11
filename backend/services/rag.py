@@ -6,11 +6,35 @@ import pandas as pd
 import random
 import backend.setup as setup
 from backend.services.embedder import embed
-# from backend.services.db import personal_table, sessions_table
 from backend.services.llm import ask
 
 
 def collect_personal_info(query, user_id, summarized_query, tags):
+    """
+    Searches and retrieves the most relevant personal information entries for a given user query 
+    using vector similarity and semantic tag matching.
+
+    Parameters:
+    - query (str): The original user query.
+    - user_id (str): The unique identifier of the user.
+    - summarized_query (str): A condensed and cleaned version of the query used for embedding.
+    - tags (List[str]): A list of tags related to the query.
+
+    Process:
+    1. Embed the summarized_query.
+    2. Performs vector search in the user's personal info table and selects the top_n documents (e.g top 20)
+    3. Assigns a base rank score based on search result order (e.g. best result is score 20, 2nd best score 19, etc)
+    4. If tags are provided:
+        - Embeds the query tags and compares them with tags from personal information in the db via cosine similarity.
+        - Calculates a tag match score based on semantic similarity above a threshold.
+    5. Combines rank and tag scores into a final score for reranking.
+    6. Returns the top K info chunks with the highest final score (only if above a threshold).
+    7. Updates metadata (usage count, timestamp) for retrieved items.
+
+    Returns:
+    - A string containing the top matched personal information entries, formatted for use in prompt construction.
+    """
+
     top_n = 20  # total results from vector search
     top_k = 5   # number to return after reranking
     sim_threshold = 0.75  # minimum cosine similarity to count as a match
@@ -70,6 +94,7 @@ def collect_personal_info(query, user_id, summarized_query, tags):
             print("Info Found!")
             print(top_k_df[['info_chunk', 'rank_score', 'tag_score' if 'tag_score' in top_k_df else 'rank_score', 'final_score']])
 
+            # update metadata, usage count and timestamp of used personal information
             for i, row in top_k_df.iterrows():
                 setup.personal_table.update(where=f"info_chunk = '{row['info_chunk']}' AND user_id = '{user_id}'", values={
                     "usage_count": row['usage_count'] + 1,
@@ -89,9 +114,21 @@ def collect_personal_info(query, user_id, summarized_query, tags):
     return personal_info 
 
 def generate_prompt(query, user_id, session_id, summarized_query, tags):
-    '''
-    RAG setup for creating and generating prompts 
-    '''
+    """
+    Constructs a personalized prompt for the llm by combining the user's query, 
+    historical session context, and semantically matched personal information.
+
+    Parameters:
+    - query (str): The original user query.
+    - user_id (str): Unique identifier for the user.
+    - session_id (int): Identifier for the current session.
+    - summarized_query (str): A condensed version of the query used for embedding.
+    - tags (List[str]): Tags related to the current query, used for enhancing relevance of personal info retrieval.
+
+    Returns:
+    - full_prompt (str): The complete prompt to send to the language model.
+    - updated_history_prompt (str): A version of the prompt history that appends the current query but excludes the generated response (for logging or future sessions).
+    """
     personal_info = collect_personal_info(query, user_id, summarized_query, tags)
     print(personal_info)
     # extract prompt history
@@ -126,26 +163,31 @@ def generate_prompt(query, user_id, session_id, summarized_query, tags):
 
 
 def generate_response(data):
+    """
+    Generates a response to a user query while maintaining and updating personalized session history.
+
+    Parameters:
+    - data (dict): A dictionary containing the following keys:
+        - "user_id" (str): Unique identifier for the user.
+        - "session_id" (int): Identifier for the current session.
+        - "query" (str): The user’s natural language query.
+
+    Returns:
+    - response (str): The generated response from the language model.
+    """
+
     user_id = data.get("user_id")
     session_id = data.get("session_id")
     query = data.get("query")
 
+    # extract info from user query, condense/summarize for personal info retrieval, construct prompt for querying
     summarized_query, tags = extract_info(data)
     prompt, history_prompt = generate_prompt(query, user_id, session_id, summarized_query, tags)
 
+    # query llm
     response = ask(prompt)
 
-    # add the response to the history response
-    session = [
-        {
-            "session_id": session_id,
-            "user_id": user_id, 
-            "history_prompt": f"{history_prompt} {response}"
-        }
-    ]
-    # update session_table with new history prompt
-    # setup.sessions_table.delete(f"user_id = '{user_id}' AND session_id = {session_id}")
-    # setup.sessions_table.add(session) 
+    # update the history_prompt for the session to keep track of the conversation
     setup.sessions_table.update(where=f"user_id = '{user_id}' AND session_id = {session_id}", 
                                 values={
                                     "history_prompt": f"{history_prompt} {response}"
@@ -154,11 +196,27 @@ def generate_response(data):
     print(response)
     return response
 
+
 def delete_session_data(data):
+    # wipe the deletes in lancedb from disk
     setup.sessions_table.compact()
 
 
 def clear_personal_table(data):
+    """
+    Cleans up the user's personal information table by removing the least relevant chunks of personal info
+
+    Parameters:
+    - data (dict): A dictionary containing the key:
+        - "user_id" (str): Unique identifier for the user whose data is being cleaned.
+
+    Find all chunks of information that are less than 1 standard deviation less than the average count value.
+    Remove the REMOVE_COUNT oldest entries. If number of entries less than 1 standard deviation away from average
+    is less than REMOVE_COUNT, randomly remove REMOVE_COUNT entries.
+
+    Returns:
+    - str: A message indicating how many entries were removed to maintain table size.
+    """
     user_id = data.get('user_id')
     MAX_ENTRIES = 100
     REMOVE_COUNT = MAX_ENTRIES * 0.2
@@ -180,16 +238,18 @@ def clear_personal_table(data):
     print(f"Average usage count: {avg_usage:.2f}")
     print(len(df), REMOVE_COUNT)
     try: 
+        # filter for chunks with count less than 1 std from average
         df_least_used = df[df['usage_count'] < (avg_usage - std)]
         df_least_used['time_stamp'] = pd.to_datetime(df['time_stamp'])
         # Sort oldest to newest
         df_least_used = df_least_used.sort_values(by='time_stamp', ascending=True)
         
-        if len(df_least_used) < REMOVE_COUNT:
+        if len(df_least_used) < REMOVE_COUNT: # default to random removal if not enough entries
             raise Exception
         oldest_entries = df_least_used.head(REMOVE_COUNT)
+
         print("removing least relevant entries")
-        for index, row in oldest_entries.iterrows():
+        for index, row in oldest_entries.iterrows(): # remove entries
             info = row['info_chunk']
             user_id = row['user_id']
             
@@ -199,7 +259,7 @@ def clear_personal_table(data):
         print("removing randomly", min(0, int(REMOVE_COUNT)))
         print(len(df), REMOVE_COUNT)
         rows_to_drop = df.sample(n=int(REMOVE_COUNT), random_state=42)  # random_state for reproducibility
-        for index, row in rows_to_drop.iterrows():
+        for index, row in rows_to_drop.iterrows(): # remove entries
             info = row['info_chunk']
             user_id = row['user_id']
             
@@ -209,6 +269,21 @@ def clear_personal_table(data):
 
 
 def parse_extracted_info(user_id, extracted_info):
+    """
+    Parses and stores extracted personal information from a string into the personal information table, 
+    while also returning the summarized query and tags for later use.
+
+    Parameters:
+    - user_id (str): Unique identifier for the user to whom the information belongs.
+    - extracted_info (str): A string containing tab-separated info chunks and a final summarized query line.
+
+    Parses extracted_info, for personal_information about the user, and condensed information/tags 
+    regarding the user's current query.
+
+    Returns:
+    - Tuple[str, List[str]]: The summarized query and list of tags.
+    - If parsing fails, returns an error message and `None`.
+    """
     if not extracted_info:
         return None
     
@@ -216,16 +291,17 @@ def parse_extracted_info(user_id, extracted_info):
         info_chunks = extracted_info.strip().split('\n')
         print(info_chunks)
 
+        # last value of info_chunks is information regarding the user's current query 
         summarized_query = info_chunks[-1]
         tags = summarized_query.split('\t')[1].split(',')
         summarized_query = summarized_query.split('\t')[0]
         info_chunks = info_chunks[:-1]
         # print(extracted_info)
-        for info_chunk in info_chunks:
-            if info_chunk == '':
+        for info_chunk in info_chunks: # iterate through each info_chunk extracting information and tags
+            if info_chunk == '': 
                 continue
-            info = info_chunk.split('\t')[0]
-            tags = [t.strip() for t in info_chunk.split('\t')[1].split(',')]
+            info = info_chunk.split('\t')[0] # strip for personal info e.g. "user is interested in planes"
+            tags = [t.strip() for t in info_chunk.split('\t')[1].split(',')] # strip for tags ["planes", "buildings"]
             personal_info_chunk = [
                 {
                     "user_id": user_id,
@@ -236,7 +312,7 @@ def parse_extracted_info(user_id, extracted_info):
                     "time_stamp": f"{datetime.now().isoformat()}"
                 }
             ]
-            setup.personal_table.add(personal_info_chunk)
+            setup.personal_table.add(personal_info_chunk) # add personal info to db
             print(tags)
         print("Extraction complete")
     except Exception as e:
@@ -246,6 +322,19 @@ def parse_extracted_info(user_id, extracted_info):
 
 
 def extract_info(data):
+    """
+    Constructs a system prompt to extract structured insights about the user and their query, 
+    using both current and past interactions, and stores the results.
+
+    Parameters:
+    - data (dict): A dictionary containing the following keys:
+        - "user_id" (str): Unique identifier for the user.
+        - "session_id" (int): Identifier for the user's active session.
+        - "query" (str): The current user query to analyze.
+
+    Returns:
+    - Tuple[str, List[str]]: The summarized query and list of tags, or `(None, None)` if nothing could be extracted.
+    """
     user_id = data.get('user_id')
     session_id = data.get('session_id')
     query = data.get('query')
@@ -261,12 +350,14 @@ def extract_info(data):
         full_query = f"Query: {query}"
     else:
         history_prompt = history_prompt['history_prompt'].tolist()[0]
-        if len(history_prompt) > 50000:
+        if len(history_prompt) > 50000: # prevent going over input token limit
             history_prompt = history_prompt[len(history_prompt)-50000:]
         full_query = (
             f"Past query and answer from this conversation: {history_prompt}\n"
             f"Current query: {query}"
         )
+
+    # prompt for extracting and formatting information from user's query
     prompt = (
         'You are an assistant that extracts structured information from natural language queries.\n'
         'Based on the current query, consider extracting the following information:\n'

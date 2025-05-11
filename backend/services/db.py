@@ -28,6 +28,7 @@ def register_db(db_instance):
 
 # setup vector database - lancedb
 def initialize_db():
+    # initialize db with values if there is no database or if database is empty
     global sessions_table, personal_table
     example_sessions = [
         {

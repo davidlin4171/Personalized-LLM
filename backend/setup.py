@@ -9,6 +9,7 @@ embedder = None
 sessions_table = None
 personal_table = None
 def initialize_system():
+    # setup the the database, tables, embedder, and llm
     global db, embedder, sessions_table, personal_table
 
     db = lancedb.connect("backend/db")

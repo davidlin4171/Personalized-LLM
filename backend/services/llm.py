@@ -7,10 +7,6 @@ from google import genai
 load_dotenv() 
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
-# headers = {
-#     "Authorization": f"Bearer {GEMINI_API_KEY}",
-#     "Content-Type": "application/json"
-# }
 client = None
 MODEL_NAME = "models/gemini-2.0-flash"
 #model = genai.GenerativeModel("gemini-pro")
