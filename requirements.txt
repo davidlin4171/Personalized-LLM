@@ -1,5 +1,4 @@
 datasets
-faiss-cpu
 sentence-transformers
 transformers
 nltk
@@ -13,3 +12,6 @@ google
 google-generativeai==0.10
 genai
 google-genai
+numpy
+scikit-learn
+pandas
