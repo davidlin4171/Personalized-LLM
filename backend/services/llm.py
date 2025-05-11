@@ -4,7 +4,8 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
-GEMINI_API_KEY = 'AIzaSyChbX9RetszZAMX5crB3QQNcux-n9t6M5o'
+load_dotenv() 
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
 # headers = {
 #     "Authorization": f"Bearer {GEMINI_API_KEY}",

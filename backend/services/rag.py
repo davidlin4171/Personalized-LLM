@@ -169,7 +169,11 @@ def clear_personal_table(data):
         return "Nothing to remove"
     
     # Remove the oldest entries. Less than average count, and then sorted by timestamp
-    df = setup.personal_table.to_pandas()
+    df = (
+        setup.sessions_table.search()
+        .where(f"user_id = '{user_id}'")
+        .to_pandas()
+    )
 
     avg_usage = df['usage_count'].mean()
     std = df['usage_count'].std()
