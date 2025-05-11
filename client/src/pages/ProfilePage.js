@@ -1,10 +1,13 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import { useLocation,  useNavigate  } from "react-router-dom";
 function ProfilePage() {
+  const navigate = useNavigate();
+  const storedUser = JSON.parse(localStorage.getItem("user")) || {};
+  const { user_id, email } = { user_id: storedUser.user_id, email: storedUser.email };
   const [userInfo, setUserInfo] = useState({
-    id: "",
+    user_id: user_id || "",
     name: "",
-    email: "",
+    email: email || "",
     gender: "",
     location: "",
     occupation: "",
@@ -16,6 +19,53 @@ function ProfilePage() {
   const [showModal, setShowModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [answers, setAnswers] = useState(["", "", "", "", ""]);
+
+  // Fetch profile data and answers from the database
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        console.log("user_id", user_id);
+        // Fetch user profile data
+        const profileResponse = await fetch("http://localhost:5000/api/fetch_user_data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id }),
+        });
+        const profileData = await profileResponse.json();
+        console.log("profileData", localStorage.getItem("user"));
+        if (profileData.status === "success" && profileData.data.length > 0) {
+          const infoChunk = profileData.data; // Extract the info_chunk field
+        const [name, email, gender, location, occupation, interests] = infoChunk.split(", ");
+        setUserInfo({
+          user_id: user_id,
+          name: name || "",
+          email: email,
+          gender: gender || "",
+          location: location || "",
+          occupation: occupation || "",
+          interests: interests ? interests.split(", ") : [],
+        });
+        }
+
+        // Fetch user answers
+        const answersResponse = await fetch("http://localhost:5000/api/fetch_user_answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ user_id }),
+        });
+        const answersData = await answersResponse.json();
+        if (answersData.status === "success" && answersData.data.length > 0) {
+          setAnswers(answersData.data.map((item) => item.info_chunk));
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+
+      fetchData();
+ 
+  }, [user_id, navigate]);
 
   const handleChange = (key, value) => {
     setUserInfo((prev) => ({ ...prev, [key]: value }));
@@ -54,12 +104,9 @@ function ProfilePage() {
           <div className="space-y-2">
             <label className="block text-sm font-medium">ID</label>
             <input
-              disabled={!editMode}
-              value={editMode ? draftInfo?.id : userInfo.id}
-              onChange={(e) =>
-                editMode && setDraftInfo({ ...draftInfo, id: e.target.value })
-              }
-              className="w-full border px-3 py-2 rounded"
+              disabled
+              value={userInfo.user_id}
+              className="w-full border px-3 py-2 rounded bg-gray-100"
             />
             <label className="block text-sm font-medium">Name</label>
             <input
@@ -70,16 +117,11 @@ function ProfilePage() {
               }
               className="w-full border px-3 py-2 rounded"
             />
-
             <label className="block text-sm font-medium">Email</label>
             <input
-              disabled={!editMode}
-              value={editMode ? draftInfo?.email : userInfo.email}
-              onChange={(e) =>
-                editMode &&
-                setDraftInfo({ ...draftInfo, email: e.target.value })
-              }
-              className="w-full border px-3 py-2 rounded"
+              disabled
+              value={userInfo.email}
+              className="w-full border px-3 py-2 rounded bg-gray-100"
             />
 
             <label className="block text-sm font-medium">Gender</label>
@@ -436,6 +478,7 @@ function ProfilePage() {
                             "Content-Type": "application/json",
                           },
                           body: JSON.stringify({
+                            user_id: user_id,
                             question_index: i,
                             answer: answers[i],
                           }),
@@ -444,6 +487,7 @@ function ProfilePage() {
                     }
                     alert("Thanks for answering the questions!");
                     setShowModal(false);
+                    navigate("/chat");          
                   } else {
                     setCurrentPage((p) => p + 1);
                   }

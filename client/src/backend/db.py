@@ -3,11 +3,6 @@ import lancedb
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-#uri = "mongodb+srv://wko21:uc17hzSAgrHNAsgP@personalized-llm.ziratuz.mongodb.net/?retryWrites=true&w=majority&appName=Personalized-LLM"
-
-# Create a new client and connect to the server
-#client = MongoClient(uri, server_api=ServerApi('1'))
-#db = client["test_database"]
 '''
 Structure - 1 table for storing session/conversation history, 1 table for personal info
 Table: Sessions
@@ -47,7 +42,12 @@ def save_user_data(data, user_id):
         "info_chunk": data_text,
         "info_chunk_embedding": embedding
     }
-    personal_table.add([new_record])
+    existing_record = rows[rows["user_id"] == user_id]
+    if existing_record.empty:
+        personal_table.add([new_record])
+    else:
+        personal_table.update(where=f"user_id == '{str(user_id)}'", values={"info_chunk": data_text, "info_chunk_embedding": embedding})
+    
     status = "success"
     return status
 
@@ -65,9 +65,47 @@ def save_answer_data(data, user_id):
     status = "success"
     return status
 
+def save_session_data(data):
+    session_table = db.open_table("sessions")
+    new_record = {
+        "session_id": data.get("session_id"),
+        "user_id": data.get("user_id"),
+        "prompt_answer": data.get("prompt_answer")
+    }
+    session_table.add([new_record])
+    status = "success"
+    return status
+
+def get_user_data(user_id):
+
+    personal_table = db.open_table("personal_info")
+    rows = personal_table.to_pandas()
+    user_data = rows[rows["user_id"] == user_id]
+    if user_data.empty:
+        return {"status": "error", "message": "User data not found"}
+    
+    return {"status": "success", "data": user_data.to_dict(orient="records")}
 
 
+def get_user_answers(user_id):
+    personal_table = db.open_table("personal_info")
+    rows = personal_table.to_pandas()
+    user_answers = rows[rows["user_id"] == user_id]
+    if user_answers.empty:
+        return {"status": "error", "message": "User answers not found"}
+    return {"status": "success", "data": user_answers.to_dict(orient="records")
+    }
+def get_user_sessions(user_id):
 
+    session_table = db.open_table("sessions")
+    rows = session_table.to_pandas()
+    user_sessions = rows[rows["user_id"] == user_id]
+    if user_sessions.empty:
+        return {"status": "error", "message": "User sessions not found"}
+    return {"status": "success", "data": user_sessions.to_dict(orient="records")}
+
+
+"""
 try:
     # example data
     example_sessions = [
@@ -114,3 +152,4 @@ try:
     
 except Exception as e:
     print(e)
+"""

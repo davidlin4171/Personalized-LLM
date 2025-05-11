@@ -10,9 +10,32 @@ function NavBar() {
 
   const activeClass = "bg-black text-white";
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
-    navigate("/login");
+  const handleLogout = async () => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const idToken = user?.id_token;
+    if (!idToken) {
+      alert("No user logged in");
+      return;
+    }
+    try {
+      const response = await fetch("http://127.0.0.1:5000/api/logoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_token: idToken }),
+      });
+  
+      const data = await response.json();
+      if (response.ok) {
+        alert("Logoff Successful!");
+        localStorage.removeItem("user");
+        navigate("/login");
+      } else {
+        alert(`Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error("Error during logoff:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (
