@@ -21,3 +21,5 @@ Personalized-LLM/client/src/backend/test.py
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+client/src/backend/secret/*.json
