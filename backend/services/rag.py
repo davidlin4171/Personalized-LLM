@@ -302,8 +302,8 @@ def parse_extracted_info(user_id, extracted_info):
     """
     if not extracted_info:
         return None
-    
     try:
+        print(extracted_info)
         info_chunks = extracted_info.strip().split('\n')
         print(info_chunks)
 
@@ -400,7 +400,5 @@ def extract_info(data):
         'Finally, return one more line briefly summarizing the entire query and users interest include tags. DO NOT label the summary. Separate tags in the same way with a tab chracter\n'
         f'{full_query}'
     )
-
     extracted_info = ask(prompt)
-    
     return parse_extracted_info(user_id, extracted_info)

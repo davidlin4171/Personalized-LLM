@@ -4,9 +4,9 @@ import os
 from dotenv import load_dotenv
 from google import genai
 
-load_dotenv() 
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-
+# load_dotenv() 
+# GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+GEMINI_API_KEY = 'AIzaSyChbX9RetszZAMX5crB3QQNcux-n9t6M5o'
 client = None
 MODEL_NAME = "models/gemini-2.0-flash"
 #model = genai.GenerativeModel("gemini-pro")

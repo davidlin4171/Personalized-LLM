@@ -9,7 +9,7 @@ dotenv
 lancedb
 torch
 google
-google-generativeai==0.10
+google-generativeai
 genai
 google-genai
 numpy
