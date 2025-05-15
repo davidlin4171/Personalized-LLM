@@ -17,6 +17,7 @@ pip install -r requirements.txt
 python -m backend.app
 
 # 4. Open a new terminal for the frontend
+cd Personalized-LLM
 cd client
 npm install
 npm start
@@ -37,6 +38,7 @@ pip install -r requirements.txt
 python -m backend.app
 
 # 4. Open a new terminal for the frontend
+cd Personalized-LLM
 cd client
 npm install
 npm start
