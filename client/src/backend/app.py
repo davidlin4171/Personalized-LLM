@@ -6,7 +6,7 @@ from firebase_admin import auth, credentials, initialize_app
 app = Flask(__name__)
 CORS(app)
 
-cred = credentials.Certificate("secret/personalized-llm-39f52-firebase-adminsdk-fbsvc-56fc515094.json")  
+cred = credentials.Certificate("client/src/backend/secret/personalized-llm-39f52-firebase-adminsdk-fbsvc-48417fdd4b.json")  
 initialize_app(cred)
 
 
@@ -57,16 +57,12 @@ def fetch_user_answer():
 @app.route("/api/signup", methods=["POST"])
 def signup():
     data = request.json
-    email = data.get("email")
-    password = data.get("password")
-
+    id_token = data.get("id_token")
     try:
-        user = auth.create_user(
-            email=email,
-            password=password,
-
-        )
-        return jsonify({"status": "success", "message": "User signed up successfully", "user_id": user.uid})
+        decoded_token = auth.verify_id_token(id_token)
+        user_id = decoded_token["uid"]
+        email = decoded_token.get("email", "")
+        return jsonify({"status": "success", "message": "User signed up successfully", "user_id": user_id})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
     
