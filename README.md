@@ -6,6 +6,7 @@
 
 ```bash
 # 1. Create and activate virtual environment
+cd Personalized-LLM
 python -m venv venv
 source venv/bin/activate
 
@@ -25,6 +26,7 @@ npm start
 
 ```bash
 # 1. Create and activate virtual environment
+cd Personalized-LLM
 python -m venv venv
 venv\Scripts\activate
 
